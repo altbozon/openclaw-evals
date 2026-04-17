@@ -47,6 +47,24 @@ _last_gemini_call: float = 0.0
 # ─────────────────────────────────────────────────────────
 
 @weave.op()
+@traceable(run_type="llm", name="llama-3.3-70b-groq")
+def call_groq(prompt: str) -> dict:
+    from groq import Groq
+
+    with LatencyTimer() as t:
+        client = Groq(api_key=os.environ["GROQ_API_KEY"])
+        resp = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=300,
+        )
+    text = resp.choices[0].message.content or ""
+    usage = resp.usage
+    # Groq free tier: $0
+    return {"answer": text, "latency_ms": t.elapsed_ms, "cost_usd": 0.0}
+
+
+@weave.op()
 @traceable(run_type="llm", name="gpt-oss-120b")
 def call_gemma(prompt: str) -> dict:
     from openai import OpenAI
@@ -103,6 +121,7 @@ def call_mistral(prompt: str) -> dict:
 
 
 PROVIDERS = {
+    "groq": call_groq,
     "gpt-oss": call_gemma,
     "gpt": call_gpt,
     "mistral": call_mistral,
@@ -129,7 +148,7 @@ def score_result(case: EvalCase, answer: str) -> dict[str, float]:
 
 def run_smoke_test(providers: list[str]) -> None:
     print("\n── Smoke test ──")
-    funcs = {"gpt-oss": call_gemma, "gpt": call_gpt, "mistral": call_mistral}
+    funcs = {"groq": call_groq, "gpt-oss": call_gemma, "gpt": call_gpt, "mistral": call_mistral}
     for name in providers:
         try:
             result = funcs[name](SMOKE_PROMPT)
@@ -224,7 +243,7 @@ def main() -> None:
     ap.add_argument("--smoke-test", action="store_true")
     ap.add_argument(
         "--provider",
-        choices=["gpt-oss", "gpt", "mistral", "all"],
+        choices=["groq", "gpt-oss", "gpt", "mistral", "all"],
         default="all",
     )
     ap.add_argument(

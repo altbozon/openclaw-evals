@@ -85,20 +85,20 @@ python run_evals.py --no-trace
 
 ## Key findings
 
-| Metric | GPT-4o-mini | Mistral-small | GPT-OSS-120B¹ |
-|--------|-------------|---------------|---------------|
-| Grounded accuracy | 0.202 | **0.257** | 0.249 |
-| Refusal correctness (R+J) | **0.600** | 0.553 | 0.333 |
-| Framing divergence (↓ better) | **0.430** | 0.488 | N/A |
-| Latency p95 | 40s | **5s** | 133s |
-| Errors / 51 calls | 4 | 5 | 34 |
-| Cost per 51 calls | $0.0065 | **$0.0040** | $0.00 |
+| Metric | GPT-4o-mini | Mistral-small | Groq/Llama-3.3-70b | GPT-OSS-120B¹ |
+|--------|-------------|---------------|---------------------|---------------|
+| Grounded accuracy | 0.202 | **0.257** | 0.152 | 0.249 |
+| Refusal correctness (R+J) | **0.600** | 0.553 | 0.550 | 0.333 |
+| Framing divergence (↓ better) | 0.430 | 0.488 | **0.390** | N/A |
+| Latency p95 | 40s | 5s | **4s** | 133s |
+| Errors / 51 calls | 4 | 5 | **0** | 34 |
+| Cost per 51 calls | $0.0065 | $0.0040 | **$0.00** | $0.00 |
 
-¹ GPT-OSS-120B via OpenRouter free tier timed out on 34/51 calls (45s limit) — results are from the 17 cases that completed. Not a fair comparison; included to document the reliability gap.
+¹ GPT-OSS-120B via OpenRouter free tier timed out on 34/51 calls — included only as a reliability finding.
 
-**Headline result:** Mistral-small is 8× faster and 38% cheaper than GPT-4o-mini with comparable grounded accuracy. GPT-4o-mini maintains the refusal boundary more reliably (60% vs 55%) and shows lower framing divergence (0.43 vs 0.49). Neither model answers the grounded Q&A well — expected, since the corpus is private.
+**Headline result:** Groq (Llama-3.3-70b) is the standout: zero errors, 4s p95 latency, free tier, and the *lowest framing divergence* of all providers (0.39). It gives the most consistent answers when price data is reframed between OHLC and tick sequence. GPT-4o-mini leads on refusal reliability (0.600). Mistral-small is the best value for grounded accuracy ($0.004 per 51 calls, highest score).
 
-**On framing sensitivity:** both models changed their answers ~40–50% of the time when the same market fact was presented as an OHLC summary vs a tick sequence. For financial AI applications where presentation format varies by data source, this is a meaningful reliability gap.
+**On framing sensitivity:** all paid providers changed answers 39–49% of the time when the same market fact was framed as OHLC vs ticks. For financial AI where data format varies by source, this is a meaningful consistency gap — the model's conclusion should not depend on whether you show it four numbers or a sequence of ticks.
 
 ---
 
