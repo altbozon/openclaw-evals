@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.egg
+
+# Environment — CONTAINS SECRETS, NEVER COMMIT
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Project artefacts
+.pytest_cache/
+cache/
+results/*.json
+.wandb/
+wandb/

@@ -1,0 +1,8 @@
+anthropic
+openai
+mistralai
+weave
+wandb
+langsmith
+python-dotenv
+pytest
