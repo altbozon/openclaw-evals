@@ -1,6 +1,7 @@
 anthropic
 openai
 mistralai
+google-genai
 weave
 wandb
 langsmith

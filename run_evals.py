@@ -25,17 +25,18 @@ SMOKE_PROMPT = "Answer in exactly one word: what is the capital of France?"
 
 
 @weave.op()
-@traceable(run_type="llm", name="claude-sonnet-4-6")
-def smoke_claude() -> str:
-    from anthropic import Anthropic
+@traceable(run_type="llm", name="gemini-2.5-flash")
+def smoke_gemini() -> str:
+    from google import genai
+    from google.genai import types
 
-    client = Anthropic()
-    msg = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=50,
-        messages=[{"role": "user", "content": SMOKE_PROMPT}],
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    resp = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=SMOKE_PROMPT,
+        config=types.GenerateContentConfig(max_output_tokens=50),
     )
-    return msg.content[0].text if msg.content else ""
+    return resp.text or ""
 
 
 @weave.op()
@@ -75,7 +76,7 @@ def main() -> None:
     )
     ap.add_argument(
         "--provider",
-        choices=["claude", "gpt", "mistral", "all"],
+        choices=["gemini", "gpt", "mistral", "all"],
         default="all",
     )
     ap.add_argument(
@@ -93,7 +94,7 @@ def main() -> None:
         weave.init("openclaw-evals")
 
     funcs = {
-        "claude": smoke_claude,
+        "gemini": smoke_gemini,
         "gpt": smoke_gpt,
         "mistral": smoke_mistral,
     }
