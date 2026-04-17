@@ -47,6 +47,34 @@ _last_gemini_call: float = 0.0
 # ─────────────────────────────────────────────────────────
 
 @weave.op()
+@traceable(run_type="llm", name="qwen-3-235b-cerebras")
+def call_cerebras(prompt: str) -> dict:
+    from openai import OpenAI, RateLimitError
+
+    client = OpenAI(
+        base_url="https://api.cerebras.ai/v1",
+        api_key=os.environ["CEREBRAS_API_KEY"],
+    )
+    # Cerebras free tier can queue under load — retry with backoff
+    last_exc = None
+    for attempt in range(4):
+        try:
+            with LatencyTimer() as t:
+                resp = client.chat.completions.create(
+                    model="qwen-3-235b-a22b-instruct-2507",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=300,
+                    timeout=60,
+                )
+            text = resp.choices[0].message.content or ""
+            return {"answer": text, "latency_ms": t.elapsed_ms, "cost_usd": 0.0}
+        except RateLimitError as e:
+            last_exc = e
+            time.sleep(3 + attempt * 4)
+    raise last_exc
+
+
+@weave.op()
 @traceable(run_type="llm", name="llama-3.3-70b-groq")
 def call_groq(prompt: str) -> dict:
     from groq import Groq
@@ -121,6 +149,7 @@ def call_mistral(prompt: str) -> dict:
 
 
 PROVIDERS = {
+    "cerebras": call_cerebras,
     "groq": call_groq,
     "gpt-oss": call_gemma,
     "gpt": call_gpt,
@@ -148,7 +177,7 @@ def score_result(case: EvalCase, answer: str) -> dict[str, float]:
 
 def run_smoke_test(providers: list[str]) -> None:
     print("\n── Smoke test ──")
-    funcs = {"groq": call_groq, "gpt-oss": call_gemma, "gpt": call_gpt, "mistral": call_mistral}
+    funcs = {"cerebras": call_cerebras, "groq": call_groq, "gpt-oss": call_gemma, "gpt": call_gpt, "mistral": call_mistral}
     for name in providers:
         try:
             result = funcs[name](SMOKE_PROMPT)
@@ -243,7 +272,7 @@ def main() -> None:
     ap.add_argument("--smoke-test", action="store_true")
     ap.add_argument(
         "--provider",
-        choices=["groq", "gpt-oss", "gpt", "mistral", "all"],
+        choices=["cerebras", "groq", "gpt-oss", "gpt", "mistral", "all"],
         default="all",
     )
     ap.add_argument(

@@ -85,20 +85,23 @@ python run_evals.py --no-trace
 
 ## Key findings
 
-| Metric | GPT-4o-mini | Mistral-small | Groq/Llama-3.3-70b | GPT-OSS-120B¹ |
-|--------|-------------|---------------|---------------------|---------------|
-| Grounded accuracy | 0.202 | **0.257** | 0.152 | 0.249 |
-| Refusal correctness (R+J) | **0.600** | 0.553 | 0.550 | 0.333 |
-| Framing divergence (↓ better) | 0.430 | 0.488 | **0.390** | N/A |
-| Latency p95 | 40s | 5s | **4s** | 133s |
-| Errors / 51 calls | 4 | 5 | **0** | 34 |
-| Cost per 51 calls | $0.0065 | $0.0040 | **$0.00** | $0.00 |
+| Metric | GPT-4o-mini | Mistral-small | Groq/Llama-3.3-70b | Cerebras/Qwen-3-235b | GPT-OSS-120B¹ |
+|--------|-------------|---------------|---------------------|----------------------|---------------|
+| Grounded accuracy | 0.202 | **0.257** | 0.152 | 0.192 | 0.249 |
+| Refusal correctness (R+J) | **0.600** | 0.553 | 0.550 | 0.579 | 0.333 |
+| Framing divergence (↓ better) | 0.430 | 0.488 | **0.390** | 0.541 | N/A |
+| Latency p95 | 40s | 5s | **4s** | 59s² | 133s |
+| Errors / 51 calls | 4 | 5 | **0** | 6 | 34 |
+| Cost per 51 calls | $0.0065 | $0.0040 | **$0.00** | $0.00 | $0.00 |
 
-¹ GPT-OSS-120B via OpenRouter free tier timed out on 34/51 calls — included only as a reliability finding.
+¹ GPT-OSS-120B via OpenRouter free tier timed out on 34/51 calls — reliability finding only.
+² Cerebras inference is sub-second; latency p95 is dominated by free-tier **queue wait**, not model speed.
 
-**Headline result:** Groq (Llama-3.3-70b) is the standout: zero errors, 4s p95 latency, free tier, and the *lowest framing divergence* of all providers (0.39). It gives the most consistent answers when price data is reframed between OHLC and tick sequence. GPT-4o-mini leads on refusal reliability (0.600). Mistral-small is the best value for grounded accuracy ($0.004 per 51 calls, highest score).
+**Headline result:** Groq (Llama-3.3-70b) is the standout: zero errors, 4s p95, free, and the *lowest framing divergence* of all providers (0.39). It gives the most consistent answers when price data is reframed between OHLC and tick sequence.
 
-**On framing sensitivity:** all paid providers changed answers 39–49% of the time when the same market fact was framed as OHLC vs ticks. For financial AI where data format varies by source, this is a meaningful consistency gap — the model's conclusion should not depend on whether you show it four numbers or a sequence of ticks.
+**Surprise finding: biggest ≠ most consistent.** Qwen 3 235B (the largest model tested, 3× bigger than Llama 3.3 70B) scored the *worst* on framing divergence (0.541). Parameter count does not buy you presentation-invariant reasoning.
+
+**On framing sensitivity:** all providers changed answers 39–54% of the time when the same market fact was framed as OHLC vs ticks. For financial AI where data format varies by source, this is a meaningful consistency gap.
 
 ---
 
